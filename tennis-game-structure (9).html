@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenisová Turnajová Hra</title>
+    <style>
+        /* Zde ponecháme stejný CSS kód jako v předchozí verzi */
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Zde ponecháme stejnou HTML strukturu jako v předchozí verzi -->
+    </div>
+    <script>
+        // Zde ponecháme stejné deklarace proměnných a počáteční funkce
+
+        function advanceToNextRound(lastWinner) {
+            let newBracket = [];
+            for (let i = 0; i < tournamentBracket.length; i += 2) {
+                let winner1 = tournamentBracket[i][0] === players[0] ? lastWinner : tournamentBracket[i][1];
+                let winner2 = i + 1 < tournamentBracket.length ? 
+                    (tournamentBracket[i+1][0] === players[0] ? lastWinner : tournamentBracket[i+1][1]) : 
+                    null;
+                if (winner2) {
+                    newBracket.push([winner1, winner2]);
+                } else {
+                    newBracket.push([winner1]);
+                }
+            }
+            tournamentBracket = newBracket;
+            currentMatchIndex = 0;
+
+            if (tournamentBracket.length === 1) {
+                endTournament(tournamentBracket[0][0]);
+            } else {
+                updateCurrentRound();
+                drawTournament();
+            }
+        }
+
+        function updateCurrentRound() {
+            switch(tournamentBracket.length) {
+                case 16: currentRound = 'Druhé kolo'; break;
+                case 8: currentRound = 'Čtvrtfinále'; break;
+                case 4: currentRound = 'Semifinále'; break;
+                case 2: currentRound = 'Finále'; break;
+            }
+        }
+
+        function endTournament(winner) {
+            alert(`Gratulujeme! Vítězem turnaje ${currentTournament} je ${winner}!`);
+            assignTournamentPoints();
+            updatePlayerRankings();
+            showRanking();
+        }
+
+        function assignTournamentPoints() {
+            let points;
+            switch(currentTournament) {
+                case 'Praha':
+                    points = [400, 250, 150, 150, 80, 80, 80, 80, 20, 20, 20, 20, 20, 20, 20, 20];
+                    break;
+                case 'Litvínov':
+                    points = [200, 120, 70, 70, 20, 20, 20, 20];
+                    break;
+                default: // Moravské Budějovice a Šumperk
+                    points = [100, 60, 20, 20];
+            }
+            
+            for (let i = 0; i < tournamentBracket.length; i++) {
+                let player1 = tournamentBracket[i][0];
+                let player2 = tournamentBracket[i][1];
+                playerRankings[player1].points += points[i * 2];
+                playerRankings[player1].tournamentsPlayed++;
+                if (player2) {
+                    playerRankings[player2].points += points[i * 2 + 1];
+                    playerRankings[player2].tournamentsPlayed++;
+                }
+            }
+        }
+
+        function updatePlayerRankings() {
+            allPlayers.sort((a, b) => playerRankings[b].points - playerRankings[a].points);
+        }
+
+        function showRanking() {
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('ranking-screen').style.display = 'block';
+            
+            let tableHTML = `
+                <tr>
+                    <th>Pořadí</th>
+                    <th>Jméno</th>
+                    <th>Body</th>
+                    <th>Odehrané turnaje</th>
+                </tr>
+            `;
+            
+            allPlayers.forEach((player, index) => {
+                tableHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${playerRankings[player].name}</td>
+                        <td>${playerRankings[player].points}</td>
+                        <td>${playerRankings[player].tournamentsPlayed}</td>
+                    </tr>
+                `;
+            });
+            
+            document.getElementById('ranking-table').innerHTML = tableHTML;
+        }
+
+        function updateBracketVisualization() {
+            const bracketContainer = document.getElementById('tournament-bracket');
+            const rounds = bracketContainer.getElementsByClassName('round');
+            const currentRound = rounds[rounds.length - 1];
+            const matches = currentRound.getElementsByClassName('match');
+
+            tournamentBracket.forEach((match, index) => {
+                if (index < matches.length) {
+                    const matchDiv = matches[index];
+                    matchDiv.classList.add('winner');
+                    matchDiv.querySelector('.player-name').textContent = match[0];
+                }
+            });
+
+            if (tournamentBracket.length > 1) {
+                const newRound = document.createElement('div');
+                newRound.className = 'round';
+                newRound.innerHTML = `<h3>${getCurrentRoundName()}</h3>`;
+
+                tournamentBracket.forEach(match => {
+                    const matchDiv = document.createElement('div');
+                    matchDiv.className = 'match';
+                    matchDiv.innerHTML = `
+                        <div class="player-name">${match[0]}</div>
+                        <div class="player-name">${match[1] || '---'}</div>
+                    `;
+                    newRound.appendChild(matchDiv);
+                });
+
+                bracketContainer.appendChild(newRound);
+            }
+        }
+
+        function getCurrentRoundName() {
+            const roundNames = ['První kolo', 'Druhé kolo', 'Čtvrtfinále', 'Semifinále', 'Finále'];
+            return roundNames[Math.log2(tournamentBracket.length * 2) - 1];
+        }
+
+        // Ovládání hráče
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'w': if (player1Y > 0) player1Y -= 10; break;
+                case 's': if (player1Y < 340) player1Y += 10; break;
+            }
+        });
+
+        // Inicializace hry
+        document.getElementById('start-screen').style.display = 'block';
+    </script>
+</body>
+</html>
